@@ -1,0 +1,187 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_office365users": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedoffice365users_6a727"
+        },
+        "api": {
+          "name": "shared_office365users"
+        }
+      },
+      "shared_powerplatformadminv2": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedpowerplatformadminv2_9f252"
+        },
+        "api": {
+          "name": "shared_powerplatformadminv2"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "undefined",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {},
+              "required": []
+            }
+          }
+        }
+      },
+      "actions": {
+        "Tenant_ID": {
+          "runAfter": {
+            "Parse_JSON": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@triggerOutputs()?['headers']?['x-ms-tenant-id']"
+        },
+        "Admin_User": {
+          "runAfter": {
+            "Tenant_ID": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@triggeroutputs()?['headers']?['x-ms-user-email']"
+        },
+        "Main_User_List": {
+          "runAfter": {},
+          "type": "Compose",
+          "inputs": [
+            {
+              "UserName": "User01@"
+            },
+            {
+              "UserName": "User02@"
+            },
+            {
+              "UserName": "User03@"
+            },
+            {
+              "UserName": "User04@"
+            },
+            {
+              "UserName": "User05@"
+            }
+          ]
+        },
+        "Parse_JSON": {
+          "runAfter": {
+            "Main_User_List": [
+              "Succeeded"
+            ]
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@outputs('Main_User_List')",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "UserName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "UserName"
+                ]
+              }
+            }
+          }
+        },
+        "Apply_to_each": {
+          "foreach": "@body('Parse_JSON')",
+          "actions": {
+            "User_Name": {
+              "runAfter": {
+                "Name_Start": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": "@replace(outputs('Admin_User'),'QA@',outputs('Name_Start'))"
+            },
+            "Name_Start": {
+              "type": "Compose",
+              "inputs": "@item()['UserName']"
+            },
+            "Get_user_profile_(V2)": {
+              "runAfter": {
+                "User_Name": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "id": "@outputs('User_Name')"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users",
+                  "operationId": "UserProfile_V2",
+                  "connectionName": "shared_office365users"
+                }
+              }
+            },
+            "Provisions_a_new_environment": {
+              "runAfter": {
+                "Get_user_profile_(V2)": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "api-version": "2024-10-01",
+                  "body/macroRegion": "europe-uk",
+                  "body/displayName": "@{outputs('Get_user_profile_(V2)')?['body/displayName']}'s Environment",
+                  "body/environmentSku": "Developer",
+                  "body/databaseType": "CommonDataService",
+                  "body/usedBy/userId": "@outputs('Get_user_profile_(V2)')?['body/id']",
+                  "body/usedBy/type": "User",
+                  "body/usedBy/displayName": "@outputs('Get_user_profile_(V2)')?['body/displayName']",
+                  "body/usedBy/tenantId": "@outputs('Tenant_ID')"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerplatformadminv2",
+                  "operationId": "ProvisionNewEnvironment",
+                  "connectionName": "shared_powerplatformadminv2"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Admin_User": [
+              "Succeeded"
+            ]
+          },
+          "type": "Foreach"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}
