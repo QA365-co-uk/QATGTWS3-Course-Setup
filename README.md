@@ -3,11 +3,11 @@
 Tools and resources used to prepare the training tenants for QATGTWS3 deliveries.
 
 ## Process
-0. Edit and then run the User Provisioning scripts
-0. Assign licenses to the Agent accounts (including Power Platform Developer License)
-0. Import the Environment Provisioning solution
-0. Run the Environment provisioning flow
-0. Do the solution stuff
+1. Edit and then run the User Provisioning scripts
+1. Assign licenses to the Agent accounts (including Power Platform Developer License)
+1. Import the Environment Provisioning solution
+1. Run the Environment provisioning flow
+1. Do the solution stuff
 
 ## User Provisioning
 
