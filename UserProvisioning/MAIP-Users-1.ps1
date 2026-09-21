@@ -1,8 +1,8 @@
 ﻿# ================================
 # CONFIGURATION
 # ================================
-$tenantDomain = "QADelegate01006517.onmicrosoft.com"
-$password     = "Apples-2907"
+$tenantDomain = "QADelegate0100XXXX.onmicrosoft.com"
+$password     = "<UserPassword>"
 
 # ================================
 # AUTHENTICATION
